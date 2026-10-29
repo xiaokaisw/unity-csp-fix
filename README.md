@@ -1,4 +1,6 @@
-# Unity Signup CSP Fix
+# 两条规则，修好一个注册页
+
+> **Unity Signup CSP Fix** ｜ Unity「验证码无效，请重试」的根因定位、声明式修复与可复现验证
 
 **一个只有 3 个文件的浏览器扩展：让 `login.unity.com` 注册页不再恒报「验证码无效，请重试」。**
 
