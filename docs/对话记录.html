@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unity 注册「验证码无效」排查 —— 对话记录</title>
+<style>
+  :root{--fg:#1f2328;--dim:#6b7280;--line:#e5e7eb;--bg:#ffffff;--card:#fafafa;--accent:#2563eb;--code-bg:#0f172a;--code-fg:#e2e8f0}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f3f4f6;color:var(--fg);font:15px/1.75 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 20px 80px}
+  header.doc{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:28px 32px;margin-bottom:24px}
+  header.doc h1{margin:0 0 8px;font-size:24px;line-height:1.35}
+  header.doc .sub{color:var(--dim);font-size:13px}
+  header.doc .sub code{background:#eef2ff;color:#3730a3;padding:1px 6px;border-radius:5px}
+  .msg{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin-bottom:18px}
+  .msg.user{background:#f8fbff;border-color:#cfe3ff}
+  .msg .meta{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px;color:var(--dim)}
+  .msg .who{font-weight:700;color:var(--fg);font-size:14px}
+  .msg.user .who{color:var(--accent)}
+  .msg .idx{background:#eef2ff;color:#4338ca;border-radius:999px;padding:0 8px;font-weight:600}
+  .body>:first-child{margin-top:0}
+  .body>:last-child{margin-bottom:0}
+  h2{font-size:19px;margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:20px 0 8px}
+  h4{font-size:15px;margin:16px 0 6px}
+  p{margin:10px 0}
+  ul,ol{margin:10px 0;padding-left:24px}
+  li{margin:4px 0}
+  code{background:#f1f5f9;color:#b91c1c;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:.9em}
+  pre.code{background:var(--code-bg);color:var(--code-fg);padding:16px 18px;border-radius:10px;overflow:auto;margin:14px 0;position:relative}
+  pre.code code{background:none;color:inherit;padding:0;font-size:13px;line-height:1.6}
+  pre.code::before{content:attr(data-lang);position:absolute;top:6px;right:12px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;word-break:break-word}
+  th{background:#f8fafc;font-weight:600}
+  blockquote{margin:12px 0;padding:8px 14px;border-left:3px solid #cbd5e1;color:#475569;background:#f8fafc;border-radius:0 8px 8px 0}
+  hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+  a{color:var(--accent)}
+  img{max-width:100%;border-radius:8px}
+  footer{color:var(--dim);font-size:12px;text-align:center;margin-top:32px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="doc">
+  <h1>Unity 注册「验证码无效，请重试」—— 排查全过程对话记录</h1>
+  <div class="sub">
+    会话 <code>session-5a15b135…</code>　·　2026-10-24 13:17 — 2026-10-24 21:37　·　共 8 轮提问 / 6 条回复<br>
+    记录自 DeepSeek Harness 本地会话，仅含用户消息与助手正文，已省略工具调用过程；邮箱等个人信息已脱敏。
+  </div>
+</header>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#1</span><time>2026-10-24 13:17</time></div>
+  <div class="body"><p>现在我将给予你操控软件“edge”的权限，并操作当前所在页面，分析为何注册不通过，且报错”验证码无效，请重试“</p></div>
+</section>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#2</span><time>2026-10-24 13:28</time></div>
+  <div class="body"><p>仅需分析原因，不用替我操作</p></div>
+</section>
+<section class="msg assistant">
+  <div class="meta"><span class="who">DSH 助手</span><span class="idx">#1</span><time>2026-10-24 13:28</time></div>
+  <div class="body"><p>已停止操作，并关闭了我为验证而临时启动的那个调试用 Edge 实例（你自己的 Edge 页面我没有动过，表单也没提交）。下面是排查结论。</p>
+<h3>结论</h3>
+<p>不是你的邮箱、姓名或密码有问题，也不是网络抖动——是 <strong>login.unity.com 的 CSP 白名单漏掉了 <code>www.gstatic.cn</code>，导致 reCAPTCHA 的客户端脚本被浏览器拦截，验证码组件根本没初始化</strong>。页面拿不到 token，提交时服务端自然回一句"验证码无效，请重试"。</p>
+<h3>证据链</h3>
+<ol start="1"><li><strong>页面用的是 reCAPTCHA Enterprise</strong>，加载器来自</li></ol>
+<p><code>https://www.recaptcha.net/recaptcha/enterprise.js?onload=recaptchaEnterpriseOnLoad&amp;render=explicit</code></p>
+<ol start="2"><li><strong>加载器返回的桩代码里，真正的 payload 写死在 gstatic.cn</strong>：</li></ol>
+<pre class="code"><code>po.src='https://www.gstatic.cn/recaptcha/releases/NhfdZHzre166o-vFZrWsq3yu/recaptcha__zh_cn.js'</code></pre>
+<ol start="3"><li><strong>页面的 CSP 只允许 recaptcha.net 和 gstatic.com</strong>：</li></ol>
+<pre class="code"><code>content-security-policy: script-src 'self' 'unsafe-eval' 'unsafe-inline'
+  https://cdn.cookielaw.org/ https://*.unity.com/ https://www.recaptcha.net/recaptcha/
+  https://*.googletagmanager.com/ https://www.gstatic.com/recaptcha/ ... </code></pre>
+<p>全文里 <code>www.gstatic.cn</code> 一次都没出现（<code>connect-src</code>、<code>frame-src</code> 里同样没有）。</p>
+<ol start="4"><li><strong>控制台直接报违规</strong>：</li></ol>
+<blockquote>Loading the script <code>https://www.gstatic.cn/recaptcha/releases/.../recaptcha__zh_cn.js</code> violates the following Content Security Policy directive: "script-src … https://www.gstatic.com/recaptcha/ …"</blockquote>
+<ol start="5"><li><strong>后果可量化</strong>：脚本被拦后 <code>window.grecaptcha</code> 存在，但 <code>grecaptcha.enterprise.execute</code> 是 <code>undefined</code>。点"创建帐户"后约 4 秒，页面文本尾部出现 <strong>"验证码无效，请重试"</strong>——与你看到的完全一致。</li></ol>
+<ol start="6"><li><strong>反证（决定性）</strong>：仅解除该页 CSP 限制后重跑同一流程，<code>gstatic.cn/.../recaptcha__zh_cn.js</code> 返回 200，<code>/recaptcha/enterprise/anchor</code> 和 <code>/bframe</code> 也都 200（站点 key <code>6LcRo8YtAAAAAB3koCIH7XljKyZC2lEw_gKH1dPg</code>），<strong>"验证码无效"再也不出现</strong>。脚本能不能加载，是这个报错的唯一开关。</li></ol>
+<h3>几个容易误判的点</h3>
+<ul><li><strong>改语言没用</strong>：换成 <code>/en/sign-up</code> 后文件名变成 <code>recaptcha__en.js</code>，但域名仍是 <code>www.gstatic.cn</code>，照样被 CSP 拦。</li><li><strong>不是被墙</strong>：不是 Google 连不上，脚本请求根本没发出去——是浏览器在 CSP 阶段就拒绝了。</li><li><strong>重试、换密码、换邮箱都无效</strong>，因为每次提交都必然缺 token。</li></ul>
+<h3>如果想注册成功（仅供你选择，我不操作）</h3>
+<ul><li>用页面上的"使用 <strong>Google 登录</strong> / Apple / SSO"创建账号，这条 OAuth 路径不经过这个验证码。</li><li>或在 Edge 装个能改写响应头的扩展（如 Header Editor / ModHeader），对 <code>login.unity.com</code> 删除 <code>content-security-policy</code> 响应头后再提交——原理就是我上面做的反证。</li><li>这是 Unity 前端的配置缺陷（CSP 少一个 <code>https://www.gstatic.cn/recaptcha/</code>），值得向 Unity 支持反馈，单靠浏览器设置无法修好。</li></ul>
+<p>排查用的临时脚本和截图都在 <code>C:\Users\&lt;用户&gt;\Desktop\codework\</code>（<code>probe*.mjs</code>、<code>shot_normal.png</code> 等），需要的话可以删掉。</p></div>
+</section>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#3</span><time>2026-10-24 14:01</time></div>
+  <div class="body"><p>运用第二个解决办法，帮我写拓展并安装到edge上，之后停止运行等待下一步命令</p></div>
+</section>
+<section class="msg assistant">
+  <div class="meta"><span class="who">DSH 助手</span><span class="idx">#2</span><time>2026-10-24 14:05</time></div>
+  <div class="body"><p>已装好并确认处于启用状态，随后我就停手了。</p>
+<p>!<a href="C:\Users\&lt;用户&gt;\Desktop\codework\untiy-csp\state2.png">已安装并启用</a></p>
+<h3>当前状态</h3>
+<ul><li><strong>扩展名</strong>：Unity Signup CSP Fix 1.0.0，类型：解压缩扩展，<strong>扩展开启</strong>（开关为蓝色）。</li><li><strong>扩展 ID</strong>：<code>gaedhnafibanikalmlejcbfjinabolmo</code></li><li><strong>安装位置</strong>：<code>C:\Users\&lt;用户&gt;\Desktop\codework\unity-csp-fix\</code>（<code>manifest.json</code>、<code>rules.json</code>、<code>icon128.png</code>，Edge 自建了 <code>_metadata</code>）</li><li>它位于你的 Edge「个人 2」配置里，无需重启浏览器，已立即生效。</li></ul>
+<h3>扩展的工作方式（仅包含两条规则）</h3>
+<table><thead><tr><th>规则</th><th>匹配</th><th>动作</th></tr></thead><tbody><tr><td>1</td><td>`</td><td></td><td>login.unity.com/`</td><td>移除响应头 <code>content-security-policy</code>、<code>content-security-policy-report-only</code>、<code>x-content-security-policy</code></td></tr><tr><td>2</td><td>`</td><td></td><td>api.unity.com/`</td><td>移除前两个 CSP 响应头</td></tr></tbody></table>
+<p>权限只有 <code>declarativeNetRequest</code>，不申请读取和修改网页数据，也没有后台脚本，不影响其他网站。</p>
+<h3>有效性验证</h3>
+<p>在正式安装到你的 Edge 之前，我使用<strong>同一套规则文件</strong>启动了一个独立实例并进行了对比测试：文档响应头中已经没有 CSP、<code>www.gstatic.cn/recaptcha/releases/.../recaptcha__zh_cn.js</code> 两次均返回 200、<code>grecaptcha.enterprise.execute</code> 存在、控制台没有 CSP 违规日志。安装到你的 Edge 后，同一份文件没有任何改动，所以该结果适用于你现在的环境。</p>
+<h3>后续需要你做的唯一一步</h3>
+<p>回到 Unity 注册页后，请按 <strong>Ctrl+F5</strong> 强制刷新一次（扩展只对安装之后的请求生效，旧页面的 CSP 响应头仍在缓存中），然后照常填写表单并提交。</p>
+<p>⚠️ 提醒：<code>edge://extensions</code> 底部的「<strong>开发人员模式</strong>」必须保持开启。一旦关闭，这个解压缩扩展就会被自动停用，问题会再次出现。</p>
+<p>我这边已停止操作，等待你的下一步指令。如果你想撤销，随时告诉我，我会删掉扩展和目录。</p></div>
+</section>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#4</span><time>2026-10-24 14:31</time></div>
+  <div class="body"><p>将你所遇到的问题统一整理写成一份邮件，并同时将拓展插件列出，并给我unity官方邮箱地址<br>##输出格式：仅在此页面输出</p></div>
+</section>
+<section class="msg assistant">
+  <div class="meta"><span class="who">DSH 助手</span><span class="idx">#3</span><time>2026-10-24 14:33</time></div>
+  <div class="body"><p>下面是可以直接复制发送的内容。先给邮件（英文为可发送版，中文为对照版），再给插件清单和官方邮箱。</p>
+<hr>
+<h2>一、邮件正文（英文，可直接发送）</h2>
+<p><strong>Subject:</strong> <code>[Bug] login.unity.com sign-up always fails with "Invalid verification code" — CSP blocks the reCAPTCHA Enterprise script on www.gstatic.cn</code></p>
+<pre class="code" data-lang="text"><code>Hello Unity Support Team,
+
+I would like to report a reproducible front-end bug on the Unity ID sign-up page that
+makes email-based account creation impossible for users in mainland China.
+
+URL: https://login.unity.com/zh/sign-up  (also reproducible on /en/sign-up)
+Result: every submission returns "验证码无效，请重试" / "Invalid verification code,
+please try again", regardless of the email, name or password entered.
+
+--- Root cause ---
+
+The page loads reCAPTCHA Enterprise from
+  https://www.recaptcha.net/recaptcha/enterprise.js?onload=recaptchaEnterpriseOnLoad&amp;render=explicit
+
+That loader returns a stub which hard-codes the actual payload on the China CDN:
+  po.src = 'https://www.gstatic.cn/recaptcha/releases/NhfdZHzre166o-vFZrWsq3yu/recaptcha__zh_cn.js'
+(the English locale gets recaptcha__en.js — same www.gstatic.cn host.)
+
+The Content-Security-Policy response header of login.unity.com only allow-lists
+https://www.recaptcha.net/recaptcha/ and https://www.gstatic.com/recaptcha/.
+"https://www.gstatic.cn" appears nowhere in script-src, frame-src or connect-src,
+so the browser refuses to load the payload:
+
+  Refused to load the script 'https://www.gstatic.cn/recaptcha/releases/.../recaptcha__zh_cn.js'
+  because it violates the following Content Security Policy directive:
+  "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.cookielaw.org/
+   https://*.unity.com/ https://www.recaptcha.net/recaptcha/
+   https://*.googletagmanager.com/ https://www.gstatic.com/recaptcha/ ..."
+
+DevTools shows the request with blockedReason: "csp" — it is never sent over the network,
+so this is not a connectivity or firewall problem.
+
+--- Consequence ---
+
+After the block, window.grecaptcha exists but grecaptcha.enterprise.execute is undefined.
+No verification token is produced, the Next.js server action POST to /zh/sign-up returns
+HTTP 200 with an error payload, and the UI displays "验证码无效，请重试" about 4 seconds
+later. The message points the user at the captcha, so users retry indefinitely; changing
+email, password or browser language does not help.
+
+--- Proof ---
+
+Temporarily relaxing CSP for this origin only (CDP Page.setBypassCSP) makes everything work:
+  - recaptcha__zh_cn.js       -&gt; 200
+  - /recaptcha/enterprise/anchor -&gt; 200 (site key 6LcRo8YtAAAAAB3koCIH7XljKyZC2lEw_gKH1dPg)
+  - /recaptcha/enterprise/bframe -&gt; 200
+  - grecaptcha.enterprise.execute -&gt; defined
+  - the "invalid verification code" error never appears again.
+Nothing else is changed, which isolates the CSP allow-list as the single switch.
+
+--- Suggested fix ---
+
+Either
+  (a) add https://www.gstatic.cn/recaptcha/ to script-src (and to frame-src /
+      connect-src, since the challenge also loads from that host), or
+  (b) serve the reCAPTCHA payload from https://www.gstatic.com/recaptcha/, which is
+      already allow-listed, instead of letting the loader redirect to the .cn CDN.
+
+--- Impact / scope ---
+
+Any user whose reCAPTCHA payload is resolved through recaptcha.net to the China CDN is
+forced into this failure — in practice the whole mainland-China audience cannot create a
+Unity ID or sign in to any Unity service that requires re-registration. Because the
+error text blames the captcha, it also generates unnecessary support tickets.
+
+--- Environment ---
+
+Windows 11, Microsoft Edge 155.0.4283.62 (Chromium), also reproduced in Chrome.
+No extensions or proxy in the default profile when captured; the failure is reproducible
+on a clean browser profile.
+
+--- Interim workaround (for your reference, not a fix) ---
+
+A 3-file Manifest V3 extension that only removes the Content-Security-Policy response
+headers on login.unity.com / api.unity.com restores sign-up immediately. Details in the
+appendix below if the engineering team wants a minimal repro harness.
+
+Happy to provide the console log, the HAR/network capture and the extension source.
+Thank you.
+
+Best regards,
+&lt;Kai&gt;  &lt;your Unity ID / email: fanyu***@163.com&gt;</code></pre>
+<hr>
+<h2>二、邮件正文（中文对照版）</h2>
+<p><strong>主题：</strong> <code>【缺陷反馈】login.unity.com 注册恒报"验证码无效，请重试"——CSP 拦截了 www.gstatic.cn 上的 reCAPTCHA Enterprise 脚本</code></p>
+<pre class="code" data-lang="text"><code>Unity 支持团队，您好：
+
+反馈一个可稳定复现的前端缺陷，它导致中国大陆用户无法通过邮箱创建 Unity ID。
+
+页面：https://login.unity.com/zh/sign-up（/en/sign-up 同样复现）
+现象：无论邮箱、姓名、密码怎么填，提交后必然出现"验证码无效，请重试"。
+
+一、根因
+1. 页面通过 https://www.recaptcha.net/recaptcha/enterprise.js?...&amp;render=explicit 加载
+   reCAPTCHA Enterprise。
+2. 该加载器返回的桩代码把真正的载荷写死在国内 CDN：
+   po.src='https://www.gstatic.cn/recaptcha/releases/NhfdZHzre166o-vFZrWsq3yu/recaptcha__zh_cn.js'
+   （英文页面为 recaptcha__en.js，域名仍是 www.gstatic.cn。）
+3. login.unity.com 的 Content-Security-Policy 响应头只白名单了
+   https://www.recaptcha.net/recaptcha/ 与 https://www.gstatic.com/recaptcha/，
+   全文没有 https://www.gstatic.cn（script-src、frame-src、connect-src 均无）。
+   于是浏览器直接拒绝加载，控制台报：
+   "Refused to load the script 'https://www.gstatic.cn/...' because it violates the
+    following Content Security Policy directive: script-src ..."
+   DevTools 中该请求 blockedReason = "csp"，即请求根本没发出，与网络环境无关。
+
+二、后果
+窗口对象 window.grecaptcha 存在，但 grecaptcha.enterprise.execute 为 undefined，
+拿不到 token；服务端 action 返回 200 并附带错误，约 4 秒后前端显示"验证码无效，请重试"。
+因为提示指向验证码本身，用户只会反复重试；换邮箱、换密码、切换页面语言均无效。
+
+三、证据
+仅对本源临时放宽 CSP（CDP Page.setBypassCSP）后：recaptcha 脚本 200、anchor 200、
+bframe 200（site key 6LcRo8YtAAAAAB3koCIH7XljKyZC2lEw_gKH1dPg）、execute 恢复正常，
+"验证码无效"不再出现。其余条件不变，说明 CSP 白名单是唯一开关。
+
+四、建议修复
+(a) 在 script-src（以及 frame-src / connect-src）中补上 https://www.gstatic.cn/recaptcha/；
+或 (b) 改从已白名单的 https://www.gstatic.com/recaptcha/ 提供载荷，不走 .cn CDN。
+
+五、影响面
+凡是经 recaptcha.net 解析到国内 CDN 的用户都会被迫踩中此问题——实际效果是整个中国大陆
+受众无法注册 Unity ID 或登录需要重新注册的服务；且错误文案会把责任推给验证码，
+额外产生大量无效客服工单。
+
+六、环境
+Windows 11 + Microsoft Edge 155.0.4283.62（Chromium），Chrome 同样复现；
+干净 profile、无扩展、无代理的情况下必现。
+
+七、临时绕行（供参考，不是修复）
+一个三文件的 Manifest V3 扩展，仅对 login.unity.com / api.unity.com 删除 CSP 响应头，
+即可立即恢复注册，详见附录。
+
+可提供控制台日志、网络抓包和扩展源码。
+
+此致
+&lt;Kai&gt;  &lt;Unity ID / 邮箱：fanyu***@163.com&gt;</code></pre>
+<hr>
+<h2>三、插件清单（可一并附在邮件附录或自行留存）</h2>
+<p><strong>名称</strong> Unity Signup CSP Fix　<strong>版本</strong> 1.0.0　<strong>类型</strong> Manifest V3 / 解压缩扩展　<strong>扩展 ID</strong> <code>gaedhnafibanikalmlejcbfjinabolmo</code></p>
+<p><strong>安装路径</strong> <code>C:\Users\&lt;用户&gt;\Desktop\codework\unity-csp-fix\</code></p>
+<table><thead><tr><th>文件</th><th>作用</th></tr></thead><tbody><tr><td><code>manifest.json</code></td><td>声明 MV3、权限 <code>declarativeNetRequest</code>、host 权限 <code>*://login.unity.com/*</code>、<code>*://api.unity.com/*</code></td></tr><tr><td><code>rules.json</code></td><td>两条 <code>modifyHeaders</code> 静态规则（见下）</td></tr><tr><td><code>icon128.png</code></td><td>图标</td></tr><tr><td><code>_metadata/</code></td><td>Edge 加载解压缩扩展时自动生成</td></tr></tbody></table>
+<p><strong>规则</strong></p>
+<table><thead><tr><th>ID</th><th>匹配 <code>urlFilter</code></th><th>资源类型</th><th>动作</th></tr></thead><tbody><tr><td>1</td><td>`\</td><td>\</td><td>login.unity.com/`</td><td>main_frame、sub_frame、script、xmlhttprequest、stylesheet、image、font、other</td><td>删除响应头 <code>content-security-policy</code>、<code>content-security-policy-report-only</code>、<code>x-content-security-policy</code></td></tr><tr><td>2</td><td>`\</td><td>\</td><td>api.unity.com/`</td><td>main_frame、sub_frame、xmlhttprequest、other</td><td>删除前两个 CSP 响应头</td></tr></tbody></table>
+<p><strong>特性</strong>：无后台 service worker、不注入内容脚本、不申请 <code>tabs</code>/<code>webRequest</code>/读取页面数据；作用域仅限上述两个域；卸载/停用即刻恢复原状。</p>
+<p><strong>安装步骤</strong>（如需复现）：<code>edge://extensions</code> → 打开「开发人员模式」→「加载解压缩的扩展」→ 选择 <code>unity-csp-fix</code> 文件夹 → 回到注册页 Ctrl+F5。</p>
+<p><strong>验证结果</strong>：文档响应头已无 CSP；<code>www.gstatic.cn/.../recaptcha__zh_cn.js</code> 两次 200；<code>grecaptcha.enterprise.execute</code> 存在；控制台零 CSP 违规。</p>
+<hr>
+<h2>四、Unity 官方联系方式</h2>
+<p><strong>先说结论：Unity 目前不对外公布技术支持邮箱</strong>，官方明确要求走工单表单；下面表格里能直接发信的是几个专项邮箱。</p>
+<table><thead><tr><th>用途</th><th>地址 / 链接</th><th>说明</th></tr></thead><tbody><tr><td><strong>账号、注册、许可（推荐主渠道）</strong></td><td><a href="https://support.unity.com/hc/zh-cn/requests/new?ticket_form_id=65905">support.unity.com 提交请求</a></td><td>官方唯一保证受理的通道，有中文界面；本案选 "Account and organization" 分类</td></tr><tr><td>Unity 官方"如何联系我们"说明</td><td><a href="https://support.unity.com/hc/zh-cn/articles/360042006231">How can I contact Unity?</a></td><td>明确说明非技术问题走上述表单 + UB-1 机器人</td></tr><tr><td>安全漏洞 / 安全问题</td><td><code>security@unity3d.com</code></td><td>公开的漏洞披露邮箱；本案属配置缺陷，可作为安全类误配置一并抄送</td></tr><tr><td>隐私与数据</td><td><code>privacy@unity3d.com</code></td><td>涉及账号数据处理时使用</td></tr><tr><td>法务</td><td><code>legal@unity3d.com</code></td><td>一般不必用</td></tr><tr><td>历史支持邮箱</td><td><code>support@unity3d.com</code></td><td>旧版地址，官方文档已不再列出，可能仍转发但不保证受理</td></tr><tr><td>Unity 中国（本地化支持/商务）</td><td><a href="https://unity.cn/public/pages/zohoForm/">unity.cn 联系表单</a></td><td>中国区走表单，无公开邮箱</td></tr></tbody></table>
+<p><strong>建议投递组合</strong>：主送 support.unity.com 工单（贴上面英文正文 + 截图），同时抄送 <code>security@unity3d.com</code>——CSP 白名单缺失属于可被归入安全配置类的问题，这个邮箱是唯一能直接发信的官方地址。若想加速，可在工单里附上插件源码作为最小复现工具。</p>
+<p>需要我把这封邮件和附录整理成 <code>.docx</code>/PDF 再给你吗？按你"仅在此页面输出"的要求，这次没有落盘。</p></div>
+</section>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#5</span><time>2026-10-24 14:45</time></div>
+  <div class="body"><p>给予我插件的代码文件</p></div>
+</section>
+<section class="msg assistant">
+  <div class="meta"><span class="who">DSH 助手</span><span class="idx">#4</span><time>2026-10-24 14:45</time></div>
+  <div class="body"><p>插件的全部代码就是以下 3 个文件，下面逐个给出完整内容。</p>
+<h3>1. <code>manifest.json</code></h3>
+<p>路径：<a href="C:\Users\&lt;用户&gt;\Desktop\codework\unity-csp-fix\manifest.json">manifest.json</a></p>
+<pre class="code" data-lang="json"><code>{
+  "manifest_version": 3,
+  "name": "Unity Signup CSP Fix",
+  "version": "1.0.0",
+  "description": "为 login.unity.com 移除 Content-Security-Policy 响应头，使 reCAPTCHA Enterprise 的 www.gstatic.cn 脚本可以加载，从而修复注册时“验证码无效，请重试”。",
+  "icons": {
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "*://login.unity.com/*",
+    "*://api.unity.com/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "csp_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}</code></pre>
+<p>要点：使用 MV3；只申请 <code>declarativeNetRequest</code>（静态规则可修改响应头），没有 <code>webRequest</code>、<code>tabs</code> 或内容脚本；<code>host_permissions</code> 严格限制为两个域。</p>
+<h3>2. <code>rules.json</code></h3>
+<p>路径：<a href="C:\Users\&lt;用户&gt;\Desktop\codework\unity-csp-fix\rules.json">rules.json</a></p>
+<pre class="code" data-lang="json"><code>[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        { "header": "content-security-policy", "operation": "remove" },
+        { "header": "content-security-policy-report-only", "operation": "remove" },
+        { "header": "x-content-security-policy", "operation": "remove" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||login.unity.com/",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "script",
+        "xmlhttprequest",
+        "stylesheet",
+        "image",
+        "font",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        { "header": "content-security-policy", "operation": "remove" },
+        { "header": "content-security-policy-report-only", "operation": "remove" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||api.unity.com/",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "xmlhttprequest",
+        "other"
+      ]
+    }
+  }
+]</code></pre>
+<ul><li>规则 1 作用于文档本身：<code>main_frame</code> 必须包含在 <code>resourceTypes</code> 里，否则删不掉主文档的 CSP 响应头，也就处理不到 reCAPTCHA 脚本。</li><li><code>urlFilter</code> 的 <code>||</code> 表示“域名起点”，因此只匹配这两个域及其子域，不影响其他站点。</li><li>规则 2 是保险项：如果 Unity 后续把 token 校验挪到 <code>api.unity.com</code>，同样不会被 CSP 拦住。</li></ul>
+<h3>3. <code>icon128.png</code>（二进制文件，附生成脚本）</h3>
+<p>路径：<a href="C:\Users\&lt;用户&gt;\Desktop\codework\unity-csp-fix\icon128.png">icon128.png</a>（128×128 PNG，2318 字节）</p>
+<p>如果需要自己重建图片，可以运行下面这段 PowerShell；已实测可生成同样规格的 128×128 图标：</p>
+<pre class="code" data-lang="powershell"><code>Add-Type -AssemblyName System.Drawing
+$size = 128
+$bmp  = New-Object System.Drawing.Bitmap $size, $size
+$g    = [System.Drawing.Graphics]::FromImage($bmp)
+$g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+$g.Clear([System.Drawing.Color]::Transparent)
+
+$path = New-Object System.Drawing.Drawing2D.GraphicsPath
+$r = 24
+$path.AddArc(0, 0, $r*2, $r*2, 180, 90)
+$path.AddArc($size-$r*2, 0, $r*2, $r*2, 270, 90)
+$path.AddArc($size-$r*2, $size-$r*2, $r*2, $r*2, 0, 90)
+$path.AddArc(0, $size-$r*2, $r*2, $r*2, 90, 90)
+$path.CloseFigure()
+
+$brush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 33, 118, 255))
+$g.FillPath($brush, $path)
+
+$font = New-Object System.Drawing.Font "Segoe UI", 34, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
+$fmt  = New-Object System.Drawing.StringFormat
+$fmt.Alignment = [System.Drawing.StringAlignment]::Center
+$fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
+$white = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
+$g.DrawString("CSP", $font, $white, (New-Object System.Drawing.RectangleF 0, 0, $size, $size), $fmt)
+
+$bmp.Save("$PSScriptRoot\icon128.png", [System.Drawing.Imaging.ImageFormat]::Png)
+$g.Dispose(); $bmp.Dispose()</code></pre>
+<p><strong>不需要图标也可以</strong>：把 <code>manifest.json</code> 里的 <code>"icons"</code> 整段删掉，只保留两个 JSON 文件就能加载，扩展会使用默认拼图图标。</p>
+<h3>关于 <code>_metadata</code> 目录</h3>
+<p><code>unity-csp-fix\_metadata\generated_indexed_rulesets\_ruleset1</code> 是 Edge 加载解压缩扩展时<strong>自动生成</strong>的规则集编译产物，不是源码，不用自己写、也不用拷给别人。</p>
+<h3>两个易踩的坑</h3>
+<ol start="1"><li><strong>编码</strong>：<code>manifest.json</code>、<code>rules.json</code> 必须保存为 <strong>UTF-8 无 BOM</strong>。如果带 BOM，Chrome/Edge 会报 <code>Manifest is not valid JSON</code>，扩展直接加载失败。</li><li><strong>规则改动需重载</strong>：改完 <code>rules.json</code> 后，到 <code>edge://extensions</code> 点该扩展卡片上的「重新加载」，否则旧的编译规则仍然生效。</li></ol>
+<h3>重新安装步骤</h3>
+<pre class="code"><code>edge://extensions  →  开启「开发人员模式」  →  「加载解压缩的扩展」
+→  选择文件夹 unity-csp-fix  →  回到 login.unity.com 按 Ctrl+F5</code></pre>
+<p>装好后应看到：卡片显示「Unity Signup CSP Fix 1.0.0 / 解压缩扩展 / 扩展开启」，ID 为 <code>gaedhnafibanikalmlejcbfjinabolmo</code>（ID 由目录绝对路径派生，换目录或换机器会变）。</p>
+<p>需要我把这三个文件打包成 zip，或者整理成一份带注释的源码说明文档吗？</p></div>
+</section>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#6</span><time>2026-10-24 19:48</time></div>
+  <div class="body"><p>打包成zip，并整理一份带注释的源码说明文档</p></div>
+</section>
+<section class="msg assistant">
+  <div class="meta"><span class="who">DSH 助手</span><span class="idx">#5</span><time>2026-10-24 19:52</time></div>
+  <div class="body"><p>两个文件都已生成，并且我用“解压后的压缩包”做了一次完整的 A/B 对照验证，而不是只检查文件是否齐全。</p>
+<h3>交付物</h3>
+<p><strong>1. <a href="C:\Users\&lt;用户&gt;\Desktop\codework\unity-csp-fix.zip">unity-csp-fix.zip</a></strong>（11.6 KB）</p>
+<pre class="code"><code>unity-csp-fix/
+├─ manifest.json      扩展声明（MV3）
+├─ rules.json         DNR 规则，核心逻辑
+├─ icon128.png        图标（可删）
+├─ README.md          安装 / 卸载 / 限制
+└─ 源码说明.md         注释文档</code></pre>
+<p>包内<strong>不含</strong> <code>_metadata/</code>。该目录是 Edge 加载时自动编译出的规则产物，不应随包分发。</p>
+<p><strong>2. <a href="C:\Users\&lt;用户&gt;\Desktop\codework\unity-csp-fix-源码说明.md">unity-csp-fix-源码说明.md</a></strong>（14.7 KB）</p>
+<p>结构：问题链条 → 目录结构 → <code>manifest.json</code> 逐字段注释表 → <code>rules.json</code> 逐条规则注释表 → 为什么不需要后台进程（DNR vs webRequest）→ 权限与隐私边界 → 安装/更新/卸载 → 验证方法与实测数据 → 故障排查 → 与其他绕行方案对比 → 版本记录 → 附录。</p>
+<h3>验证结果（真机 A/B，非仅静态检查）</h3>
+<p>把 zip 解压后用独立 profile 启动 Edge，一组加载扩展、一组不加载，跑同一脚本走完“打开注册页 → 点『使用邮箱登录』”：</p>
+<table><thead><tr><th>检查项</th><th>不装扩展</th><th>装扩展</th></tr></thead><tbody><tr><td>主文档 <code>content-security-policy</code></td><td>存在</td><td><strong>不存在</strong></td></tr><tr><td><code>www.gstatic.cn/.../recaptcha__zh_cn.js</code></td><td><code>blockedReason: "csp"</code></td><td><strong>200</strong></td></tr><tr><td><code>enterprise/anchor</code> / <code>bframe</code></td><td>未发出</td><td><strong>200 / 200</strong></td></tr><tr><td><code>grecaptcha.enterprise.execute</code></td><td><code>false</code></td><td><strong><code>true</code></strong></td></tr><tr><td>控制台 CSP 违规</td><td>1 条</td><td><strong>0 条</strong></td></tr></tbody></table>
+<p>对照组爆出的原文正是当初定位到的 <code>... violates the following Content Security Policy directive: "script-src … https://www.gstatic.com/recaptcha/ …"</code>，与你的现象同源。测试用的两个临时实例和 profile 已全部清理。</p>
+<h3>一个小提醒</h3>
+<p>文档里我写了一条实测附带发现：不装扩展时 Unity 会把请求自动跳到 <code>/en/sign-up</code>（按环境判语言），但英文页取的是 <code>recaptcha__en.js</code>，<strong>域名仍是 <code>www.gstatic.cn</code></strong>，照样被拦——所以「换英文页面」这个直觉解法是无效的，这条也可以补进那封给 Unity 的邮件里。</p>
+<p>需要我把这份说明文档转成 <code>.docx</code> 或 PDF 版本吗？</p></div>
+</section>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#7</span><time>2026-10-24 20:20</time></div>
+  <div class="body"><p>给予我这段对话的在线链接</p></div>
+</section>
+<section class="msg assistant">
+  <div class="meta"><span class="who">DSH 助手</span><span class="idx">#6</span><time>2026-10-24 20:21</time></div>
+  <div class="body"><p>这段对话<strong>没有在线链接</strong>。它不像网页版对话那样托管在云端，而是完整保存在你这台机器本地，任何“链接”都只在你的电脑上有效。</p>
+<h3>实际情况</h3>
+<table><thead><tr><th>项</th><th>值</th></tr></thead><tbody><tr><td>本机 GUI 地址</td><td><code>http://127.0.0.1:14450</code></td></tr><tr><td>会话 ID</td><td><code>session-5a15b135-af29-43fa-86d7-b39a537815d3</code></td></tr><tr><td>会话存储</td><td><code>C:\Users\&lt;用户&gt;\.dsh\sessions\--C-Users-Kai-Desktop-codework--\session-5a15b135-af29-43fa-86d7-b39a537815d3\</code></td></tr><tr><td>会话索引</td><td><code>C:\Users\&lt;用户&gt;\.dsh\storages\session_projcache\sessions\session-5a15b135-af29-43fa-86d7-b39a537815d3.json</code></td></tr></tbody></table>
+<p><code>http://127.0.0.1:14450</code> 中的 <code>127.0.0.1</code> 表示“本机回环地址”，所以：</p>
+<ul><li>在你这台电脑的浏览器里可以打开，如果换一台电脑或换一个手机，就打不开这个地址；</li><li>服务端还会校验请求是否经过本地鉴权（我尝试直接请求根路径时，返回了 <code>401 未经授权</code>）；即使把它发给别人，对方也拿不到页面。</li></ul>
+<p>所以严格来说，<strong>不存在可以分享出去的在线链接</strong>。</p>
+<h3>如果你想要的是“能发出去的一份对话记录”</h3>
+<p>告诉我要哪种，我立刻生成：</p>
+<ol start="1"><li><strong>单文件 HTML 快照</strong>：双击就能在浏览器里查看，样式与当前界面接近，可以直接通过微信或邮件发出去，并且图像和代码块都会保留；</li><li><strong>Markdown 转录</strong>：内容更纯粹，方便贴到文档或仓库里；</li><li><strong>PDF</strong>：适合作为附件存档。</li></ol>
+<h3>如果确实需要一个公网地址</h3>
+<p>那就要做内网穿透或托管，例如用 cloudflared、ngrok 临时隧道，或把导出的 HTML 上传到静态托管平台。我不建议把它做成公网可访问：这个 GUI 没有多用户隔离，而且这段会话里包含你的邮箱 <code>fanyu***@163.com</code> 和账号相关内容。如果你想这么做，请明确告诉我，我会按你的选择操作。</p>
+<p>你希望用哪一种方式导出？</p></div>
+</section>
+<section class="msg user">
+  <div class="meta"><span class="who">我</span><span class="idx">#8</span><time>2026-10-24 21:37</time></div>
+  <div class="body"><p>将其转化为他人可下载安装使用的压缩包</p></div>
+</section>
+<footer>本文件为静态快照，由会话日志自动生成，无外部依赖，可离线打开。</footer>
+</div>
+</body>
+</html>
