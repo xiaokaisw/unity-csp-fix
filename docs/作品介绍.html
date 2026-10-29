@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>两条规则，修好一个注册页 —— 作品介绍</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    color: #111827; font-size: 10.5pt; line-height: 1.75;
+  }
+  .page {
+    width: 210mm; height: 297mm; padding: 18mm 17mm 14mm; position: relative;
+    page-break-after: always; overflow: hidden;
+  }
+  .page:last-child { page-break-after: auto; }
+  .pfoot {
+    position: absolute; left: 17mm; right: 17mm; bottom: 7mm;
+    display: flex; justify-content: space-between;
+    font-size: 8pt; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 3mm;
+  }
+  h1 { font-size: 26pt; line-height: 1.3; margin: 0 0 4mm; letter-spacing: -0.3pt; }
+  h2 { font-size: 14pt; margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 2px solid #1d4ed8; display: inline-block; }
+  h3 { font-size: 11.5pt; margin: 6mm 0 2mm; color: #1f2937; }
+  p { margin: 0 0 2.6mm; }
+  .kicker { font-size: 8.5pt; letter-spacing: 2pt; color: #1d4ed8; text-transform: uppercase; margin-bottom: 5mm; }
+  .lead { color: #374151; font-size: 10.5pt; }
+  .muted { color: #6b7280; }
+  .mono, code { font-family: Consolas, "Cascadia Mono", monospace; }
+  code { background: #f1f5f9; padding: 0.5mm 1.4mm; border-radius: 1mm; font-size: 9pt; color: #b91c1c; }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 4mm 5mm; border-radius: 2mm;
+    font-family: Consolas, monospace; font-size: 8.2pt; line-height: 1.55; margin: 3mm 0;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  pre .hl { color: #fca5a5; }
+  pre .cm { color: #64748b; }
+  .cover { display: block; }
+  .cover .top { margin-top: 30mm; }
+  .cover .mid { margin-top: 24mm; }
+  .cover .title { font-size: 30pt; font-weight: 800; line-height: 1.25; letter-spacing: -0.5pt; }
+  .cover .sub { font-size: 13pt; color: #374151; margin-top: 6mm; line-height: 1.6; }
+  .cover .rule { width: 26mm; height: 3.2pt; background: #1d4ed8; margin: 8mm 0; }
+  .cover .meta { font-size: 9.5pt; color: #4b5563; line-height: 2; }
+  .cover .meta b { color: #111827; font-weight: 600; display: inline-block; width: 18mm; }
+  .figs { display: flex; gap: 4mm; margin-top: 8mm; }
+  .fig { flex: 1; border: 1px solid #e5e7eb; border-radius: 2.5mm; padding: 4mm 4mm 3.5mm; }
+  .fig .n { font-size: 19pt; font-weight: 800; color: #1d4ed8; line-height: 1.1; }
+  .fig .l { font-size: 8.6pt; color: #6b7280; margin-top: 1mm; line-height: 1.5; }
+  .kw { font-size: 8.6pt; color: #6b7280; margin-top: 10mm; }
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 2mm; font-size: 9pt; }
+  th, td { border: 1px solid #e5e7eb; padding: 2.2mm 2.6mm; text-align: left; vertical-align: top; }
+  th { background: #f8fafc; font-weight: 600; color: #374151; }
+  td.ok { color: #047857; font-weight: 600; }
+  td.bad { color: #b91c1c; font-weight: 600; }
+  .callout { background: #eff6ff; border-left: 3pt solid #1d4ed8; padding: 3.5mm 4mm; border-radius: 0 2mm 2mm 0; margin: 4mm 0; font-size: 9.6pt; }
+  .callout.warn { background: #fffbeb; border-left-color: #d97706; }
+  ul, ol { margin: 2mm 0 3mm; padding-left: 5mm; }
+  li { margin: 1.2mm 0; }
+  .chain { display: flex; align-items: stretch; gap: 2.5mm; margin: 4mm 0 5mm; }
+  .chain .box { flex: 1; border: 1px solid #e5e7eb; border-radius: 2mm; padding: 3mm 2.6mm; font-size: 8.6pt; line-height: 1.55; background: #fff; }
+  .chain .box.red { border-color: #fecaca; background: #fef2f2; }
+  .chain .box.blue { border-color: #bfdbfe; background: #eff6ff; }
+  .chain .box b { display: block; font-size: 9pt; margin-bottom: 1mm; }
+  .arrow { align-self: center; color: #9ca3af; font-size: 12pt; }
+  .shot { border: 1px solid #e5e7eb; border-radius: 2mm; overflow: hidden; margin: 3mm 0; }
+  .shot img { width: 78%; display: block; margin: 0 auto; }
+  .cap { font-size: 8.2pt; color: #6b7280; margin-top: 1.5mm; text-align: center; }
+  .two { display: flex; gap: 5mm; }
+  .two > div { flex: 1; min-width: 0; }
+  .tag { display: inline-block; font-size: 8pt; padding: 0.6mm 2mm; border-radius: 999px; background: #eef2ff; color: #3730a3; margin-right: 1.5mm; }
+  .small { font-size: 9pt; }
+  .tl { display: flex; margin: 4mm 0 2mm; }
+  .tl-item { flex: 1; padding: 0 3mm 0 0; }
+  .tl-item .d { font-size: 8pt; color: #1d4ed8; font-weight: 700; letter-spacing: 0.5pt; }
+  .tl-item .t { font-size: 10pt; font-weight: 700; margin: 0.6mm 0 1mm; }
+  .tl-item .s { font-size: 8.4pt; color: #6b7280; line-height: 1.5; border-top: 2px solid #e5e7eb; padding-top: 2mm; }
+</style>
+</head>
+<body>
+
+<!-- ============ 1 封面 ============ -->
+<div class="page cover">
+  <div class="top">
+    <div class="kicker">作品介绍 / Project Overview · 2026</div>
+    <div class="title">两条规则，<br>修好一个注册页</div>
+    <div class="rule"></div>
+    <div class="sub">Unity「验证码无效，请重试」的<br>根因定位、声明式修复与可复现验证</div>
+  </div>
+
+  <div class="mid">
+    <p class="lead" style="max-width:150mm">
+      一个「看起来是用户自己填错了」的失败，最终被还原成一条可验证的服务端配置缺陷：
+      页面 CSP 白名单漏了中国区 CDN 域名，验证码脚本根本没被浏览器放行。
+      本项目给出完整证据链、一个只有 2 条规则、0 行 JS 的修复扩展，以及一套零依赖的自动判定脚本。
+    </p>
+
+    <div class="figs">
+      <div class="fig"><div class="n">3</div><div class="l">个文件即完整扩展<br>manifest / rules / icon</div></div>
+      <div class="fig"><div class="n">2</div><div class="l">条声明式规则<br>declarativeNetRequest</div></div>
+      <div class="fig"><div class="n">0</div><div class="l">行 JavaScript<br>无后台 · 无注入 · 不联网</div></div>
+      <div class="fig"><div class="n">1</div><div class="l">个已验证的根因<br>单变量反证即可复现</div></div>
+    </div>
+
+    <div class="meta" style="margin-top:10mm">
+      <div><b>作者</b>xiaokaisw</div>
+      <div><b>日期</b>2026 年 10 月 29 日</div>
+      <div><b>仓库</b>github.com/xiaokaisw/unity-csp-fix</div>
+      <div><b>版本</b>Unity Signup CSP Fix v1.0.0</div>
+    </div>
+
+    <div class="kw">
+      <span class="tag">CSP</span><span class="tag">reCAPTCHA Enterprise</span><span class="tag">Manifest V3</span>
+      <span class="tag">declarativeNetRequest</span><span class="tag">Chrome DevTools Protocol</span><span class="tag">故障定位</span>
+    </div>
+  </div>
+
+  <div class="pfoot"><span>Unity Signup CSP Fix · 作品介绍</span><span>1 / 7</span></div>
+</div>
+
+<!-- ============ 2 问题 ============ -->
+<div class="page">
+  <h2>一、问题：一个被误判为「用户操作失误」的故障</h2>
+
+  <p class="lead">
+    在 Unity 的账号注册页 <code>https://login.unity.com/zh/sign-up</code> 填完表单、点击「创建帐户」，
+    约 4 秒后必然出现一行提示：<b>验证码无效，请重试</b>。
+  </p>
+
+  <table>
+    <tr><th style="width:34mm">维度</th><th>观察结果</th></tr>
+    <tr><td>触发条件</td><td>任意邮箱、任意合规密码，稳定复现</td></tr>
+    <tr><td>提示文案</td><td>「验证码无效，请重试」——把矛头指向用户没有通过人机校验</td></tr>
+    <tr><td>网络面板</td><td>表单提交 <code>POST /zh/sign-up</code> 返回 <b>200</b>，错误只在响应体里</td></tr>
+    <tr><td>验证码对象</td><td><code>window.grecaptcha</code> 存在，但 <code>grecaptcha.enterprise.execute</code> 是 <b>undefined</b></td></tr>
+    <tr><td>控制台</td><td>一条红色 CSP 违规，且指向验证码的脚本地址</td></tr>
+  </table>
+
+  <p class="small muted">
+    注意第一行与第三行的反差：<b>提交在 HTTP 层是「成功」的</b>。只盯着状态码排查，会一路得出错误结论——
+    这正是这类故障最容易带偏方向的地方。
+  </p>
+
+  <h3>控制台原文（决定性证据）</h3>
+  <pre>Refused to load the script
+  <span class="hl">'https://www.gstatic.cn/recaptcha/releases/NhfdZHzre166o-vFZrWsq3yu/recaptcha__zh_cn.js'</span>
+because it violates the following Content Security Policy directive:
+
+  script-src 'self' 'unsafe-eval' 'unsafe-inline'
+             https://cdn.cookielaw.org/ https://*.unity.com/
+             https://www.recaptcha.net/recaptcha/ https://*.googletagmanager.com/
+             https://www.gstatic.com/recaptcha/ https://www.clarity.ms ...</pre>
+
+  <p>
+    DevTools 的网络面板给出同一结论的另一种表述：该请求 <code>blockedReason: "csp"</code>，
+    即<b>请求根本没有发出去</b>，是浏览器在执行安全策略时自己拦下的。
+  </p>
+
+  <div class="callout warn">
+    <b>由此一次性排除的假设：</b>邮箱已被注册？密码不合规？需要重试？被墙？
+    换语言？换浏览器？——脚本连请求都没发出，网络与账号因素都不成立。
+  </div>
+
+  <div class="pfoot"><span>Unity Signup CSP Fix · 作品介绍</span><span>2 / 7</span></div>
+</div>
+
+<!-- ============ 3 根因 ============ -->
+<div class="page">
+  <h2>二、根因：CSP 白名单与脚本真实来源不一致</h2>
+
+  <table>
+    <tr><th style="width:10mm">#</th><th style="width:30mm">环节</th><th>发生了什么</th></tr>
+    <tr><td>1</td><td>加载器</td><td><code>recaptcha.net/recaptcha/enterprise.js</code> 返回 200，但内容只是一段桩代码</td></tr>
+    <tr><td>2</td><td>桩代码</td><td>真正的 payload 被写死在 <code>www.gstatic.cn/recaptcha/…/recaptcha__zh_cn.js</code></td></tr>
+    <tr style="background:#fef2f2"><td>3</td><td>CSP 白名单</td><td>只允许 <code>recaptcha.net</code> 与 <code>gstatic.com</code>，<b>没有 <code>gstatic.cn</code></b></td></tr>
+    <tr style="background:#fef2f2"><td>4</td><td>浏览器拒绝</td><td>请求在发出之前就被拦下：<code>blockedReason: "csp"</code></td></tr>
+    <tr style="background:#eff6ff"><td>5</td><td>无 token</td><td><code>grecaptcha.enterprise.execute</code> 未挂载，服务端回「验证码无效，请重试」</td></tr>
+  </table>
+
+  <h3>两个关键事实</h3>
+  <ul>
+    <li><b>脚本域名不是按语言变的。</b>切到英文页只是把文件名换成 <code>recaptcha__en.js</code>，域名仍然是 <code>www.gstatic.cn</code>——所以「换成英文页面」这条常见建议无效。</li>
+    <li><b>CSP 是响应头，不是 meta 标签。</b>它由服务端下发，客户端改设置、清缓存、换浏览器都无法绕过。</li>
+  </ul>
+
+  <h3>反证实验：只改一个变量，故障消失</h3>
+  <p class="small">
+    用 CDP 的 <code>Page.setBypassCSP</code> 仅对该页临时放行 CSP，其余条件完全不变，重跑同一条流程：
+  </p>
+  <table>
+    <tr><th style="width:60mm">检查项</th><th>放行前</th><th>放行后</th></tr>
+    <tr><td><code>gstatic.cn/…/recaptcha__zh_cn.js</code></td><td class="bad">blockedReason: csp</td><td class="ok">200</td></tr>
+    <tr><td><code>/recaptcha/enterprise/anchor</code></td><td>未发出</td><td class="ok">200</td></tr>
+    <tr><td><code>/recaptcha/enterprise/bframe</code></td><td>未发出</td><td class="ok">200</td></tr>
+    <tr><td><code>grecaptcha.enterprise.execute</code></td><td class="bad">undefined</td><td class="ok">function</td></tr>
+    <tr><td>「验证码无效，请重试」</td><td class="bad">出现</td><td class="ok">不再出现</td></tr>
+  </table>
+
+  <div class="callout">
+    单变量改变、现象整体翻转，且无需触碰账号、网络或密码——<b>CSP 白名单是唯一开关</b>。
+    这一步是「假设」变成「结论」的分界线。
+  </div>
+
+  <h3>这为什么值得被认真修</h3>
+  <p class="small">
+    验证码的失败文案天然把责任推给用户，用户于是反复重试、换邮箱、清缓存，实际永远不会成功；
+    而对该站点而言，这是中国区用户注册链路的一道静默断点。问题不在用户，在一条漏写的白名单。
+  </p>
+
+  <div class="pfoot"><span>Unity Signup CSP Fix · 作品介绍</span><span>3 / 7</span></div>
+</div>
+
+<!-- ============ 4 方案 ============ -->
+<div class="page">
+  <h2>三、方案：把修复压到两条声明式规则</h2>
+
+  <p class="lead">
+    修复不需要注入脚本、不需要读取页面：只在两个 Unity 域上移除 CSP 响应头，
+    让本来合法的验证码脚本可以被加载。
+  </p>
+
+  <table>
+    <tr><th style="width:12mm">#</th><th style="width:44mm">匹配范围</th><th>动作</th></tr>
+    <tr><td>1</td><td><code>||login.unity.com/</code></td><td>移除 <code>content-security-policy</code>、<code>content-security-policy-report-only</code>、<code>x-content-security-policy</code></td></tr>
+    <tr><td>2</td><td><code>||api.unity.com/</code></td><td>移除前两个同名响应头</td></tr>
+  </table>
+
+  <h3>为什么这样写</h3>
+  <ul>
+    <li><b>用 declarativeNetRequest 而不是 webRequest。</b>前者由浏览器在内部执行静态规则，不需要常驻后台进程，也不申请「读取所有请求」的高危权限。</li>
+    <li><b>作用域写死两个域。</b>规则不匹配其它任何站点，误伤面为零。</li>
+    <li><b>不含任何 JavaScript。</b>没有内容脚本 → 读不到 DOM、读不到用户输入；没有 fetch → 不收集、不上传。</li>
+  </ul>
+
+  <h3>权限边界（可对照 <code>manifest.json</code> 核对）</h3>
+  <table class="small">
+    <tr><th style="width:52mm">能力</th><th>是否具备</th></tr>
+    <tr><td>修改响应头</td><td class="ok">是（仅上述两个域）</td></tr>
+    <tr><td>注入内容脚本 / 读取页面</td><td class="bad">否</td></tr>
+    <tr><td><code>tabs</code> / <code>webRequest</code> / <code>cookies</code></td><td class="bad">否</td></tr>
+    <tr><td>联网 / 数据上报</td><td class="bad">否</td></tr>
+  </table>
+
+  <div class="shot">
+    <img src="pdf_ext_card.png" alt="扩展已加载并启用">
+  </div>
+  <div class="cap">加载后的扩展：3 个文件、ID <span class="mono">gaedhnafibanikalmlejcbfjinabolmo</span>、开关为启用状态</div>
+
+  <h3 style="margin-top:4mm">为什么不直接用现成的改头插件</h3>
+  <ul class="small">
+    <li><b>Header Editor / ModHeader 能用，但代价更大：</b>它们通常要求「读取并修改所有站点的请求」权限，为一条规则开放全站读写，对一个只需两周有效的排障场景并不划算。</li>
+    <li><b>所以选择自建最小扩展：</b>权限只到两个域、规则只做一件事、源码全文可审计——30 秒就能读完并判断它安全与否。</li>
+  </ul>
+
+  <div class="pfoot"><span>Unity Signup CSP Fix · 作品介绍</span><span>4 / 7</span></div>
+</div>
+
+<!-- ============ 5 验证 ============ -->
+<div class="page">
+  <h2>四、验证：可复现，且能自动判定</h2>
+
+  <p class="lead">
+    验证不靠肉眼截图，而靠脚本。<code>verify/verify.mjs</code> 用 Chrome DevTools Protocol 直接观察
+    真实网络与控制台，输出判定 <code>load</code> 或 <code>block</code>，并支持 <code>--expect</code> 断言接进 CI。
+  </p>
+
+  <pre><span class="cm"># 起一个带扩展的独立浏览器实例（不碰日常配置）</span>
+powershell -ExecutionPolicy Bypass -File verify/run.ps1
+<span class="cm"># 另开终端验证</span>
+node verify/verify.mjs --port 9333 --expect load</pre>
+
+  <h3>实测输出（2026-10-29，未装扩展，摘录）</h3>
+  <pre>================ 观测结果 ================
+  最终 URL                        https://login.unity.com/zh/sign-up
+  主文档 CSP                      <span class="hl">nonce+strict-dynamic</span>
+  gstatic 验证码脚本              200 https://www.gstatic.cn/recaptcha/releases/…
+  anchor / bframe                200 / 200
+  grecaptcha.enterprise.execute  true
+  CSP 违规条数                    0
+==========================================
+判定：验证码可正常加载（无需修复，或修复已生效）
+PASS —— 与 --expect load 一致</pre>
+
+  <h3>三种组合的对照</h3>
+  <table class="small">
+    <tr><th style="width:52mm">检查项</th><th>旧策略<br>不装扩展</th><th>旧策略<br>装扩展</th><th>新策略<br>不装扩展</th></tr>
+    <tr><td>主文档 CSP</td><td>host-allowlist</td><td class="ok">不存在</td><td>nonce+strict-dynamic</td></tr>
+    <tr><td><code>gstatic.cn</code> 验证码脚本</td><td class="bad">blocked: csp</td><td class="ok">200</td><td class="ok">200</td></tr>
+    <tr><td>anchor / bframe</td><td>未发出</td><td class="ok">200 / 200</td><td class="ok">200 / 200</td></tr>
+    <tr><td><code>execute</code></td><td class="bad">false</td><td class="ok">true</td><td class="ok">true</td></tr>
+    <tr><td>CSP 违规</td><td class="bad">1 条</td><td class="ok">0</td><td class="ok">0</td></tr>
+    <tr><td>判定</td><td>block</td><td>load</td><td>load</td></tr>
+  </table>
+
+  <div class="callout">
+    <b>脚本的价值不止于「证明当时修好了」。</b>它把结论写成了可执行的断言：一旦站点回退到旧策略，
+    <code>--expect load</code> 会立刻失败——这是一条真正意义上的回归探针。
+  </div>
+
+  <div class="pfoot"><span>Unity Signup CSP Fix · 作品介绍</span><span>5 / 7</span></div>
+</div>
+
+<!-- ============ 6 复查 ============ -->
+<div class="page">
+  <h2>五、5 天后复查：站点已自我修复</h2>
+
+  <p>
+    2026-10-29 用同一套脚本复测，问题不再复现。差别落在 CSP 策略本身：
+  </p>
+
+  <table class="small">
+    <tr><th style="width:46mm"></th><th>2026-10-24（旧策略）</th><th>2026-10-29（新策略）</th></tr>
+    <tr><td><code>script-src</code></td><td>'self' 'unsafe-eval' 'unsafe-inline' + 主机白名单</td><td>'self' 'nonce-…' 'strict-dynamic' + 主机白名单</td></tr>
+    <tr><td><code>gstatic.cn</code> 脚本</td><td class="bad">被 CSP 拦截</td><td class="ok">200</td></tr>
+    <tr><td><code>execute</code></td><td class="bad">undefined</td><td class="ok">function</td></tr>
+  </table>
+
+  <p class="small">
+    原因很直接：一旦策略里出现 <code>'strict-dynamic'</code>，<b>主机白名单对脚本不再起限制作用</b>，
+    由已信任脚本（带 nonce 的 Next.js 主包）动态插入的 <code>gstatic.cn</code> 脚本会被放行。
+    两种策略在灰度期可能并存，同一 URL 不同时间可能拿到不同的那一份。
+  </p>
+
+  <div class="callout warn">
+    <b>所以本项目对自己的定位也随证据调整：</b>它不是「一个长期必需的补丁」，
+    而是「一套定位方法 + 一个应急开关 + 一个回归探针」。工具保留 <code>load</code> / <code>block</code> 两种判定，
+    正是为了在策略并存或回退时仍能给出确定答案。
+  </div>
+
+  <h3 style="margin-top:9mm">这条时间线本身就是结论的一部分</h3>
+  <div class="tl">
+    <div class="tl-item"><div class="d">10-24</div><div class="t">复现</div><div class="s">CSP 拦截脚本<br>「验证码无效」稳定复现</div></div>
+    <div class="tl-item"><div class="d">10-24</div><div class="t">定位</div><div class="s">单变量反证<br>锁定 CSP 白名单</div></div>
+    <div class="tl-item"><div class="d">10-26</div><div class="t">修复</div><div class="s">3 文件扩展落地<br>A/B 实测通过</div></div>
+    <div class="tl-item"><div class="d">10-29</div><div class="t">复查</div><div class="s">站点切换策略<br>故障不再复现</div></div>
+  </div>
+
+  <p class="small muted" style="margin-top:5mm">
+    一个排障作品的价值，不在于「我修好了」，而在于<b>每个结论都注明它成立于哪一天、依据是什么</b>——
+    包括结论失效的那一天。
+  </p>
+
+  <h3 style="margin-top:8mm">两次抓到的策略原文（同一 URL，不同日期）</h3>
+  <pre><span class="cm">// 2026-10-24 —— 主机白名单生效，gstatic.cn 不在名单里</span>
+content-security-policy: script-src 'self' 'unsafe-eval' 'unsafe-inline'
+  https://www.recaptcha.net/recaptcha/ https://www.gstatic.com/recaptcha/ …
+
+<span class="cm">// 2026-10-29 —— 加了 nonce + strict-dynamic，白名单不再约束脚本</span>
+content-security-policy: script-src 'self' <span class="hl">'nonce-…' 'strict-dynamic'</span>
+  https://www.recaptcha.net/recaptcha/ https://www.gstatic.com/recaptcha/ …</pre>
+
+  <div class="pfoot"><span>Unity Signup CSP Fix · 作品介绍</span><span>6 / 7</span></div>
+</div>
+
+<!-- ============ 7 价值与材料 ============ -->
+<div class="page">
+  <h2>六、价值、可复用性与边界</h2>
+
+  <h3>沉淀下来的三样东西</h3>
+  <ul>
+    <li><b>一条可复用的排障路径：</b>CSP 违规 → 追加载链 → 读响应头 → 单变量反证。它不依赖 Unity，可迁移到任何第三方脚本被拦的站点。</li>
+    <li><b>一个最小化修复范式：</b>能用声明式规则解决的，就不写脚本、不要后台、不开大权限。</li>
+    <li><b>一个可执行的结论：</b>把「我验证过」变成 <code>--expect load</code> 这条会失败的断言。</li>
+  </ul>
+
+  <h3>必须说清的边界</h3>
+  <ul>
+    <li>移除 CSP 等于关掉该页面一层防护；本扩展只覆盖两个域，注册完成后建议停用，不做「常驻安全降级」。</li>
+    <li>只适用 Chromium 内核；Firefox 的规则行为不同，未做适配。</li>
+    <li>这是本地绕行，不是对站点的修复；站点换域名或换验证码供应商时，规则需同步更新。</li>
+    <li>所有结论都限定在被观测的那一刻——包括「问题存在」和「问题已消失」，两者都需要重新验证才算数。</li>
+  </ul>
+
+  <h3>如果要把这套方法交到别人手上</h3>
+  <p class="small">
+    仓库里 <code>verify/</code> 可独立于扩展使用：任何一次「验证码加载不出来」的怀疑，
+    都可以先跑一次 <code>verify.mjs</code> 拿到确定答案，再决定要不要写补丁。
+    这也意味着，即使有朝一日扩展本身不再需要，工具与文档仍然成立。
+  </p>
+
+  <h2 style="margin-top:7mm">七、材料清单</h2>
+  <table class="small">
+    <tr><th style="width:38mm">材料</th><th>位置</th></tr>
+    <tr><td>完整可运行代码</td><td><code>github.com/xiaokaisw/unity-csp-fix</code>（extension / verify / docs / tools）</td></tr>
+    <tr><td>作品介绍 PDF</td><td>本文件</td></tr>
+    <tr><td>演示视频</td><td>见提交页视频链接（分镜脚本见 <code>docs/演示视频脚本.md</code>）</td></tr>
+  </table>
+
+  <h3 style="margin-top:4mm">三分钟复现全文</h3>
+  <pre style="font-size:7.3pt;line-height:1.45;margin-bottom:0"><span class="cm"># 1) 载入扩展：edge://extensions → 开发人员模式 → 加载解压缩的扩展 → extension/</span>
+git clone https://github.com/xiaokaisw/unity-csp-fix.git &amp;&amp; cd unity-csp-fix
+<span class="cm"># 2) 起一个带扩展的独立实例，并自动判定</span>
+powershell -ExecutionPolicy Bypass -File verify/run.ps1
+node verify/verify.mjs --port 9333 --expect load
+<span class="cm"># 对照：加 -NoExtension 再跑一次，比较两次输出</span></pre>
+
+  <div class="pfoot"><span>Unity Signup CSP Fix · 作品介绍</span><span>7 / 7</span></div>
+</div>
+
+</body>
+</html>
