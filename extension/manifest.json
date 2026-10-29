@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Unity Signup CSP Fix",
+  "version": "1.0.0",
+  "description": "为 login.unity.com 移除 Content-Security-Policy 响应头，使 reCAPTCHA Enterprise 的 www.gstatic.cn 脚本可以加载，从而修复注册时“验证码无效，请重试”。",
+  "icons": {
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "*://login.unity.com/*",
+    "*://api.unity.com/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "csp_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}

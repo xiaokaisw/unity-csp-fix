@@ -1,0 +1,12 @@
+# 依赖与产物
+node_modules/
+*.log
+
+# 浏览器自动生成的规则编译产物（不要提交，Edge 会在加载时重新生成）
+extension/_metadata/
+**/_metadata/
+
+# 临时验证 profile 与截图
+.verify-profile/
+*.png.bak
+shots/
